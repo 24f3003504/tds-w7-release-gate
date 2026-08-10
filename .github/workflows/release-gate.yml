@@ -4,23 +4,42 @@ on:
   push:
     branches: [main]
 
+permissions:
+  contents: read
+
 jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
-      - name: Install dependencies
-        run: npm install
-
-      - name: TDS identity: 24f3003504@ds.study.iitm.ac.in
+      - name: "TDS identity: 24f3003504@ds.study.iitm.ac.in"
         run: echo "TDS identity: 24f3003504@ds.study.iitm.ac.in"
 
-      - name: Run tests
-        run: npm test
+      - name: Safe payload should promote
+        run: |
+          curl -s -X POST https://bitter-poetry-8ccd.24f3003504.workers.dev/ \
+            -H "Content-Type: application/json" \
+            -d '{"target":"preview","event":"push","ref":"refs/heads/feature",
+                 "workflow":{"trigger":"push",
+                   "permissions":{"contents":"read","packages":"write","id-token":"none"},
+                   "testsPassed":true,"matrixComplete":true,"failFast":false,
+                   "actions":[{"owner":"actions","name":"checkout","ref":"v4"}]},
+                 "image":{"multiStage":true,"runsAsRoot":false,"secretMode":"none",
+                   "criticalVulnerabilities":0,"digestPinned":true}}' \
+          | tee response.json
+          jq -e '.decision == "promote"' response.json
+
+      - name: Unsafe payload should block
+        run: |
+          curl -s -X POST https://bitter-poetry-8ccd.24f3003504.workers.dev/ \
+            -H "Content-Type: application/json" \
+            -d '{"target":"production","event":"pull_request","ref":"refs/heads/main",
+                 "workflow":{"trigger":"pull_request_target",
+                   "permissions":{"contents":"write","packages":"write","id-token":"none"},
+                   "testsPassed":false,"matrixComplete":false,"failFast":true,
+                   "actions":[{"owner":"deploy-tools","name":"deploy-action","ref":"v3"}]},
+                 "image":{"multiStage":false,"runsAsRoot":true,"secretMode":"arg",
+                   "criticalVulnerabilities":2,"digestPinned":false}}' \
+          | tee response2.json
+          jq -e '.decision == "block"' response2.json
