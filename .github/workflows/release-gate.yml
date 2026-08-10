@@ -19,7 +19,7 @@ jobs:
 
       - name: Safe payload should promote
         run: |
-          curl -s -X POST https://bitter-poetry-8ccd.24f3003504.workers.dev/ \
+          curl -s -X POST https://bitter-poetry-8ccd.24f3003504.workers.dev/release-gate \
             -H "Content-Type: application/json" \
             -d '{"target":"preview","event":"push","ref":"refs/heads/feature",
                  "workflow":{"trigger":"push",
@@ -33,7 +33,7 @@ jobs:
 
       - name: Unsafe payload should block
         run: |
-          curl -s -X POST https://bitter-poetry-8ccd.24f3003504.workers.dev/ \
+          curl -s -X POST https://bitter-poetry-8ccd.24f3003504.workers.dev/release-gate \
             -H "Content-Type: application/json" \
             -d '{"target":"production","event":"pull_request","ref":"refs/heads/main",
                  "workflow":{"trigger":"pull_request_target",
